@@ -35,7 +35,7 @@ The integration tests require a bootstrapped Juju controller.
 ```bash
 # preserve the created juju model after tests finish for additional introspection
 export MK8S_KEEP_MODEL=1
-# specify charmhub name or local path
+# specify charmhub name or local path. Set to `build` to build charm from source
 export MK8S_CHARM=<path-to-microk8s.charm>
 # install microk8s snap from a specific channel, e.g. 1.21
 export MK8S_SNAP_CHANNEL=''

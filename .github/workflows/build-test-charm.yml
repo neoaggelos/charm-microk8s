@@ -22,21 +22,20 @@ jobs:
           provider: lxd
       - name: Add user to lxd group
         run: sudo usermod -a -G lxd $USER
-      - name: Build charm
+      - name: Add lxd-profile.yaml for charm
         run: |
-          set -x
           cp hacks/lxd-profile.yaml .
-          sg lxd -c 'charmcraft build'
-      - name: Uploading snap
-        uses: actions/upload-artifact@v2.2.4
-        with:
-          name: microk8s.charm
-          path: microk8s*.charm
       - name: Install tox
         run: |
           sudo apt-get install tox
       - name: Run integration tests
         run: |
           export MK8S_CLUSTER_SIZE=1
-          export MK8S_CHARM=./microk8s.charm
+          export MK8S_CHARM=build
           sg lxd -c 'tox -e integration'
+      - name: Uploading snap
+        uses: actions/upload-artifact@v2.2.4
+        if: always()
+        with:
+          name: microk8s.charm
+          path: microk8s*.charm

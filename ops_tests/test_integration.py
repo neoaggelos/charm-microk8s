@@ -19,6 +19,10 @@ async def test_deploy_cluster(ops_test: OpsTest):
     if os.getenv("MK8S_KEEP_MODEL"):
         ops_test.keep_model = True
 
+    if charm == "build":
+        LOG.info("Build charm")
+        charm = await ops_test.build_charm(".")
+
     if proxy is not None:
         LOG.info("Configure model to use proxy %s", proxy)
         await ops_test.model.set_config(
@@ -51,6 +55,7 @@ async def test_deploy_cluster(ops_test: OpsTest):
         config=charm_config,
         channel=charm_channel,
         constraints=constraints,
+        force=True,
     )
 
     LOG.info("Wait for MicroK8s cluster")
