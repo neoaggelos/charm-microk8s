@@ -189,7 +189,10 @@ class MicroK8sCluster(Object):
             self.model.unit.status = MaintenanceStatus('enabling microk8s addons: {}'.format(', '.join(to_enable)))
             cmd = ['/snap/bin/microk8s', 'enable']
             cmd.extend(addons)
-            subprocess.check_call(cmd)
+            process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logger.info('Command %s finished with return code %d.\nStdout: %s\nStderr: %s\n',cmd, process.returncode, process.stdout.decode(), process.stderr.decode())
+            if process.returncode != 0:
+                logger.warning('Command failed with return code %d', process.returncode)
             self.model.unit.status = ActiveStatus()
 
         if to_disable:
