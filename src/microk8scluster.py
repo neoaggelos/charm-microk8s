@@ -21,6 +21,7 @@ from utils import (
     join_url_key,
     microk8s_ready,
     open_port,
+    retry_until_zero_rc,
 )
 
 logger = logging.getLogger(__name__)
@@ -189,17 +190,14 @@ class MicroK8sCluster(Object):
             self.model.unit.status = MaintenanceStatus('enabling microk8s addons: {}'.format(', '.join(to_enable)))
             cmd = ['/snap/bin/microk8s', 'enable']
             cmd.extend(addons)
-            process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logger.info('Command %s finished with return code %d.\nStdout: %s\nStderr: %s\n',cmd, process.returncode, process.stdout.decode(), process.stderr.decode())
-            if process.returncode != 0:
-                logger.warning('Command failed with return code %d', process.returncode)
+            retry_until_zero_rc(cmd, max_tries=10, timeout_seconds=5)
             self.model.unit.status = ActiveStatus()
 
         if to_disable:
             self.model.unit.status = MaintenanceStatus('disabling microk8s addons: {}'.format(', '.join(to_disable)))
             cmd = ['/snap/bin/microk8s', 'disable']
             cmd.extend(to_disable)
-            subprocess.check_call(cmd)
+            retry_until_zero_rc(cmd, max_tries=10, timeout_seconds=5)
             self.model.unit.status = ActiveStatus()
 
         self._state.enabled_addons = addons
