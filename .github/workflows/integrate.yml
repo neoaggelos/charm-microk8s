@@ -1,0 +1,64 @@
+name: Integration tests
+
+on: [push]
+  # push:
+  #   branches:
+  #     - master
+  # pull_request:
+  #   branches:
+  #     - master
+
+jobs:
+  build:
+    name: Build charm
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checking out code
+        uses: actions/checkout@v2.3.4
+      - name: Initialize charmcraft
+        run: |
+          sudo snap install lxd
+          sudo usermod -a -G lxd $USER
+          sudo lxd init --auto
+          sudo snap install charmcraft --classic
+      - name: Build charm
+        run: |
+          cp hacks/lxd-profile.yaml .
+          sg lxd -c 'charmcraft build -v'
+      - name: Upload charm
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: microk8s.charm
+          path: ./microk8s_ubuntu-20.04-amd64.charm
+
+  test:
+    name: Integration tests
+    runs-on: ubuntu-20.04
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ['1.20', '1.21', '1.22']
+
+    steps:
+      - name: Checking out repo
+        uses: actions/checkout@v2.3.4
+      - name: Download charm
+        uses: actions/download-artifact@v2
+        with:
+          name: microk8s.charm
+      - name: Configure pytest-operator
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: lxd
+      - name: Add user to lxd group
+        run: sudo usermod -a -G lxd $USER
+      - name: Install tox
+        run: |
+          sudo apt-get install tox
+      - name: Run integration tests
+        run: |
+          export MK8S_CLUSTER_SIZE=1
+          export MK8S_SNAP_CHANNEL=${{ matrix.channel }}
+          export MK8S_CHARM=./microk8s_ubuntu-20.04-amd64.charm
+          sg lxd -c 'tox -e integration'
