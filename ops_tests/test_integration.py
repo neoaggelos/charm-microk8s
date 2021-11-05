@@ -59,4 +59,4 @@ async def test_deploy_cluster(ops_test: OpsTest):
     )
 
     LOG.info("Wait for MicroK8s cluster")
-    await ops_test.model.wait_for_idle()
+    await ops_test.model.wait_for_idle(timeout=60 * 60)
