@@ -62,8 +62,18 @@ jobs:
           export MK8S_CLUSTER_SIZE=3
           export MK8S_SNAP_CHANNEL=${{ matrix.channel }}
           export MK8S_CHARM=./microk8s_ubuntu-20.04-amd64.charm
+          export MK8S_KEEP_MODEL=1
           sg lxd -c 'tox -e integration -- --model testing'
-      - name: Get juju debug-logs
-        run: |
-          juju debug-log -m testing --replay
+      - name: Retrieve artifacts
         if: always()
+        run: |
+          mkdir artifacts
+          juju debug-log -m testing --replay > artifacts/juju.log
+          juju status -m testing --format yaml > artifacts/juju.yaml
+          juju ssh microk8s/leader 'microk8s status && microk8s kubectl get all -A' > artifacts/microk8s.txt
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: artifacts/
